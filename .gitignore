@@ -1,0 +1,34 @@
+# Środowisko wirtualne
+venv/
+.venv/
+env/
+
+# Skompilowane pliki Pythona
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Dystrybucja / pakowanie
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Logi i dane tymczasowe
+*.log
+*.tmp
+
+# Pliki IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Pliki systemowe Windows
+Thumbs.db
+desktop.ini
+
+# Pliki środowiskowe
+.env
+.env.*

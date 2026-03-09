@@ -2,15 +2,15 @@ import random
 import time
 from game import TicTacDoh
 from easyAI import AI_Player, Negamax
-from custom_ai import NegamaxWithoutAB
+from custom_ai import ExpectiMinimax
 from time_decorator import calc_function_time
 
-def simulate_game(game: TicTacDoh, timing_stats: dict, is_probabilistic=True, fail_probability=0.2):
-	"""Funckja przeprowadzająca pojedynczą grę między dwoma AI.
-	  Nie wyświetla aktualnego stanu planszy a jedynie zwraca zwycięzce.
-	  Może działać w trybie probabilistycznym, gdzie istnieje szansa że ruch się nie powiedzie.
-	  Zwraca 0 jeżeli remis, 1 jeżeli wygrał pierwszy gracz, 2 jeżeli wygrał drugi gracz."""
-	
+FAIL_PROBABILITY = 0.2
+
+def simulate_game(game: TicTacDoh, timing_stats: dict, is_probabilistic=True, fail_probability=FAIL_PROBABILITY):
+	"""Przeprowadza pojedynczą grę między dwoma AI.
+	Zwraca 0 jeżeli remis, 1 jeżeli wygrał pierwszy gracz, 2 jeżeli wygrał drugi gracz."""
+
 	while not game.is_over():
 		player_idx = game.current_player
 		t_start = time.perf_counter()
@@ -18,28 +18,30 @@ def simulate_game(game: TicTacDoh, timing_stats: dict, is_probabilistic=True, fa
 		t_elapsed = time.perf_counter() - t_start
 		timing_stats[player_idx]['total'] += t_elapsed
 		timing_stats[player_idx]['count'] += 1
+
 		chance = random.random()
 		if not is_probabilistic or chance >= fail_probability:
 			game.make_move(move)
 		game.switch_player()
+
 	if game.lose():
 		return game.opponent_index
 	else:
 		return 0
 
 @calc_function_time
-def run_tournament(n=10, max_depth=5, is_probabilistic=True):
-	print("=== Rozpoczęcie turnieju AI vs AI ===" \
+def run_expecti_tournament(n=10, max_depth=5, is_probabilistic=True):
+	print("=== Turniej: ExpectiMinimax vs Negamax (easyAI) ===" \
 	f"\nLiczba gier: {n}" \
-	f"\nMax głębokość Negamax AI: {max_depth}")
+	f"\nMax głębokość: {max_depth}")
 	if is_probabilistic:
-		print("WERSJA PROBABILISTYCZNA")
+		print(f"WERSJA PROBABILISTYCZNA (p_fail={FAIL_PROBABILITY})")
 	else:
 		print("WERSJA DETERMINISTYCZNA")
 
-	counter = {0: 0, 1: 0, 2: 0} # licznik wyników: remis, zwycięstwo gracza 1, zwycięstwo gracza 2}
+	counter = {0: 0, 1: 0, 2: 0}
 
-	ai1 = NegamaxWithoutAB(max_depth)
+	ai1 = ExpectiMinimax(max_depth, fail_probability=FAIL_PROBABILITY)
 	ai2 = Negamax(max_depth)
 
 	ai_player_O = AI_Player(ai1)
@@ -48,7 +50,7 @@ def run_tournament(n=10, max_depth=5, is_probabilistic=True):
 	players = [ai_player_O, ai_player_X]
 
 	ai_names = {
-		1: f"NegamaxWithoutAB(depth={max_depth})",
+		1: f"ExpectiMinimax(depth={max_depth}, p_fail={FAIL_PROBABILITY})",
 		2: f"Negamax easyAI(depth={max_depth})",
 	}
 	timing_stats = {
@@ -57,7 +59,7 @@ def run_tournament(n=10, max_depth=5, is_probabilistic=True):
 	}
 
 	for i in range(n):
-		if i%2 != 0:
+		if i % 2 != 0:
 			game = TicTacDoh(players=players, first_player=2)
 		else:
 			game = TicTacDoh(players=players, first_player=1)
@@ -77,4 +79,4 @@ def run_tournament(n=10, max_depth=5, is_probabilistic=True):
 
 
 if __name__ == "__main__":
-	run_tournament(n=100, max_depth=7, is_probabilistic=True)
+	run_expecti_tournament(n=100, max_depth=7, is_probabilistic=True)

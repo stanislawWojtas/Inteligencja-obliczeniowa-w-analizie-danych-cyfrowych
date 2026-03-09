@@ -1,4 +1,4 @@
-from easyAI import TwoPlayerGame, AI_Player, Negamax, Human_Player
+from easyAI import TwoPlayerGame
 import random
 
 class TicTacDoh(TwoPlayerGame):

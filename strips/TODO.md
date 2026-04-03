@@ -8,8 +8,8 @@
 
 ## Zadania na 6 punktów
 
-* [ ] Wszystkie zadania z poprzedniej części.
-* [ ] Zdefiniuj podcele dla problemów (minimum dwa podcele do każdego problemu). Rozwiąż ponownie problem z podcelami, z heurystyką i bez, analogicznie jak w zadaniach na 4 punkty.
+* [x] Wszystkie zadania z poprzedniej części.
+* [x] Zdefiniuj podcele dla problemów (minimum dwa podcele do każdego problemu). Rozwiąż ponownie problem z podcelami, z heurystyką i bez, analogicznie jak w zadaniach na 4 punkty.
 
 ## Zadania na 8 punktów
 

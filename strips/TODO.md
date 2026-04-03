@@ -13,8 +13,8 @@
 
 ## Zadania na 8 punktów
 
-* [ ] Wszystkie zadania z poprzednich części.
-* [ ] Zdefiniuj i rozwiąż dodatkowo trzy problemy z podcelami, których rozwiązanie wymaga minimum 20 instancji akcji.
+* [x] Wszystkie zadania z poprzednich części.
+* [x] Zdefiniuj i rozwiąż dodatkowo trzy problemy z podcelami, których rozwiązanie wymaga minimum 20 instancji akcji.
 
 Rozwiązania (kod i raporty) należy przesłać na platformie MS TEAMS w terminie trzech tygodni od daty rozpoczęcia ćwiczenia.
 Jeśli w przesłanym raporcie zabraknie ważnej informacji, na kolejnych zajęciach mogą zostać zadane dodatkowe pytania, a odpowiedzi mogą wpłynąć na ocenę końcową.

@@ -1,0 +1,26 @@
+Projekt 3: Podstawy Gymnasium   
+Projekt przygotowujemy w grupach 2, max 3 osobowych, jeśli zostanie osoba bez pary.   
+Uwaga: nowsze wersje Gymnasium występują w pakiecie o nazwie “gymnasium”, zaś starsze w 
+pakiecie “gym”. Proszę instalować pakiet “gymnasium”. Większość przykładów znajdujących się w 
+internecie do środowiska “gym” powinno dalej działać po zmianie nazwy importowanego pakietu.   
+Zadania na 4 punktów:    
+1. Napisz program rozwiązujący problem (np. Frozen Lake, Taxi) ze środowiska gymnasium .  
+Program powinien wykorzystywać uczenie ze wzmocnieniem.   
+2. Napisz sprawozdanie (około 2-3 strony A4), w którym opiszesz swoją implementację, 
+wykorzystany algorytm oraz przeprowadzone eksperymenty z AI. Opisz jak wygląda 
+uczenie.   
+3. Umieść krzywą uczenia   
+Każde środowisko może być wybrane przez co najwyżej 2 grupy.   
+Uwzględnij współczynnik dyskontowy równy 0.9.   
+Lista do zapisów zostanie umieszczona na platformie MS Teams.   
+Zadania na 6 punktów:    
+1. Wszystkie zadania na 6 punktów.   
+2. Rozwiąż problem w którym przestrzeń obserwacji jest ciągła a nie dyskretna.   
+3. Rozważ trzy różne współczynniki dyskontowe, opisz jak różnią się wyniki przy ich zmianie.   
+Zadania na 8 punktów:    
+1. Zaimplementuj dwa algorytmy rozwiązujące wybrany problem.   
+2. Porównaj działanie utworzonych algorytmów.   
+3. Zoptymalizuj hiperparametry algorytmów, np. zoptymalizuj ze względu na całkowitą 
+zdyskontowaną nagrodę w 1000 pierwszych epizodach lub krokach.   
+Rozwiązania (kod i sprawozdanie) należy przesłać na platformie MS TEAMS do dnia 2025-04-29, 
+godzina 23:59.   

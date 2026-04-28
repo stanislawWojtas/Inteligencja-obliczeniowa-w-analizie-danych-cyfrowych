@@ -32,3 +32,4 @@ desktop.ini
 # Pliki środowiskowe
 .env
 .env.*
+.DS_Store

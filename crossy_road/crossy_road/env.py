@@ -37,6 +37,11 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.reward_collision = float(cfg.get("reward_collision", -1.0))
         self.reward_finish = float(cfg.get("reward_finish", 2.0))
 
+        self.safe_block_min = int(cfg.get("safe_block_min", 1))
+        self.safe_block_max = int(cfg.get("safe_block_max", 5))
+        self.traffic_block_min = int(cfg.get("traffic_block_min", 3))
+        self.traffic_block_max = int(cfg.get("traffic_block_max", 6))
+
         self.road_start_y = 1
         self.goal_y = self.height - 1
         self.safe_start_y = 0
@@ -48,6 +53,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.player_y = self.safe_start_y
         self.steps = 0
         self.cars: list[Car] = []
+        self.safe_lanes: set[int] = set()
 
         self.action_space = spaces.Discrete(4)
 
@@ -66,17 +72,34 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.cell_px = 40
         self._surface = None
 
+    def _build_safe_lanes(self) -> set[int]:
+        safe_lanes: set[int] = set()
+        lane = self.road_start_y
+        while lane < self.goal_y:
+            traffic_span = int(self._np_random.integers(self.traffic_block_min, self.traffic_block_max + 1))
+            lane += traffic_span
+            if lane >= self.goal_y:
+                break
+            safe_span = int(self._np_random.integers(self.safe_block_min, self.safe_block_max + 1))
+            safe_end = min(self.goal_y, lane + safe_span)
+            for y in range(lane, safe_end):
+                safe_lanes.add(y)
+            lane = safe_end
+        return safe_lanes
+
     def _build_cars(self) -> list[Car]:
         cars: list[Car] = []
         for lane in range(self.road_start_y, self.goal_y):
+            if lane in self.safe_lanes:
+                continue
             direction = int(self._np_random.choice([-1, 1]))
+            lane_speed = float(self._np_random.uniform(self.car_speed_min, self.car_speed_max))
             # Keep lane cars separated and moving together to avoid overlaps.
             base_positions = np.linspace(0, self.width, num=self.cars_per_lane, endpoint=False)
             lane_shift = float(self._np_random.uniform(0.0, self.width / max(1, self.cars_per_lane)))
             for base_x in base_positions:
                 x = float((base_x + lane_shift) % self.width)
-                speed = float(self._np_random.uniform(self.car_speed_min, self.car_speed_max))
-                cars.append(Car(lane=lane, x=x, speed=speed, direction=direction))
+                cars.append(Car(lane=lane, x=x, speed=lane_speed, direction=direction))
         return cars
 
     def _lane_index(self, lane_y: int) -> int:
@@ -159,6 +182,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.player_x = self.width // 2
         self.player_y = self.safe_start_y
         self.steps = 0
+        self.safe_lanes = self._build_safe_lanes()
         self.cars = self._build_cars()
 
         obs = self._get_obs()
@@ -258,9 +282,10 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self._surface.fill((34, 139, 34))
 
         for y in range(self.road_start_y, self.goal_y):
+            color = (34, 139, 34) if y in self.safe_lanes else (60, 60, 60)
             pygame.draw.rect(
                 self._surface,
-                (60, 60, 60),
+                color,
                 (0, (self.height - 1 - y) * self.cell_px, self.width * self.cell_px, self.cell_px),
             )
 

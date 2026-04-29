@@ -51,6 +51,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self._np_random = np.random.default_rng()
         self.player_x = self.width // 2
         self.player_y = self.safe_start_y
+        self.max_player_y = self.safe_start_y
         self.steps = 0
         self.cars: list[Car] = []
         self.safe_lanes: set[int] = set()
@@ -71,6 +72,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.clock = None
         self.cell_px = 40
         self._surface = None
+        self._font = None
 
     def _build_safe_lanes(self) -> set[int]:
         safe_lanes: set[int] = set()
@@ -171,6 +173,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             "player_x": self.player_x,
             "player_y": self.player_y,
             "progress": self.player_y / max(1, self.goal_y),
+            "score": self.max_player_y - self.safe_start_y,
             "steps": self.steps,
         }
 
@@ -181,6 +184,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
 
         self.player_x = self.width // 2
         self.player_y = self.safe_start_y
+        self.max_player_y = self.safe_start_y
         self.steps = 0
         self.safe_lanes = self._build_safe_lanes()
         self.cars = self._build_cars()
@@ -202,6 +206,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
 
         if action is not None:
             self._move_player(action)
+        self.max_player_y = max(self.max_player_y, self.player_y)
         self._update_cars()
 
         reward = self.reward_step_penalty
@@ -245,6 +250,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             pygame.display.set_caption("Crossy Road Env")
             self.clock = pygame.time.Clock()
             self._surface = pygame.Surface((w, h))
+            self._font = pygame.font.Font(None, 40)
 
     def get_human_action(self, default_action: int | None = None) -> int | None:
         if self.render_mode != "human":
@@ -308,6 +314,12 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             (player_x_px + 6, player_y_px + 6, self.cell_px - 12, self.cell_px - 12),
         )
 
+        assert self._font is not None
+        score = self.max_player_y - self.safe_start_y
+        score_surface = self._font.render(str(score), True, (255, 255, 255))
+        score_rect = score_surface.get_rect(midtop=(self.width * self.cell_px // 2, 8))
+        self._surface.blit(score_surface, score_rect)
+
         if self.render_mode == "human":
             self.window.blit(self._surface, (0, 0))
             pygame.display.flip()
@@ -326,3 +338,4 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             self.window = None
             self.clock = None
             self._surface = None
+            self._font = None

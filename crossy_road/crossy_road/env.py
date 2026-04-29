@@ -47,7 +47,8 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.traffic_block_min = int(cfg.get("traffic_block_min", 3))
         self.traffic_block_max = int(cfg.get("traffic_block_max", 6))
 
-        self.road_start_y = 1
+        self.start_safe_rows = int(cfg.get("start_safe_rows", 3))
+        self.road_start_y = max(1, self.start_safe_rows)
         self.goal_y = self.goal_distance
         self.safe_start_y = 0
         self.n_lanes = self.goal_y - self.road_start_y
@@ -61,7 +62,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.cars: list[Car] = []
         self.safe_lanes: set[int] = set()
 
-        self.action_space = spaces.Discrete(4)
+        self.action_space = spaces.Discrete(8)
 
         nearest_per_lane = self.n_lanes
         local_occ_size = (2 * self.obs_radius + 1) ** 2
@@ -122,14 +123,28 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         return lane_y - self.road_start_y
 
     def _move_player(self, action: int) -> None:
+        dx = 0.0
+        dy = 0.0
         if action == 0:  # up
-            self.player_y = min(float(self.goal_y), self.player_y + self.player_speed)
+            dy = 1.0
         elif action == 1:  # down
-            self.player_y = max(float(self.safe_start_y), self.player_y - self.player_speed)
+            dy = -1.0
         elif action == 2:  # left
-            self.player_x = max(0.0, self.player_x - self.player_speed)
+            dx = -1.0
         elif action == 3:  # right
-            self.player_x = min(float(self.width - 1), self.player_x + self.player_speed)
+            dx = 1.0
+        elif action == 4:  # up-left
+            dx, dy = -1.0, 1.0
+        elif action == 5:  # up-right
+            dx, dy = 1.0, 1.0
+        elif action == 6:  # down-left
+            dx, dy = -1.0, -1.0
+        elif action == 7:  # down-right
+            dx, dy = 1.0, -1.0
+
+        scale = self.player_speed / np.sqrt(2.0) if dx != 0.0 and dy != 0.0 else self.player_speed
+        self.player_x = float(np.clip(self.player_x + dx * scale, 0.0, float(self.width - 1)))
+        self.player_y = float(np.clip(self.player_y + dy * scale, float(self.safe_start_y), float(self.goal_y)))
 
     def _update_cars(self) -> None:
         for car in self.cars:
@@ -309,13 +324,26 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
                 elif event.key in (pygame.K_d, pygame.K_RIGHT):
                     action = 3
         pressed = pygame.key.get_pressed()
-        if pressed[pygame.K_w] or pressed[pygame.K_UP]:
+        up = pressed[pygame.K_w] or pressed[pygame.K_UP]
+        down = pressed[pygame.K_s] or pressed[pygame.K_DOWN]
+        left = pressed[pygame.K_a] or pressed[pygame.K_LEFT]
+        right = pressed[pygame.K_d] or pressed[pygame.K_RIGHT]
+
+        if up and left and not down and not right:
+            action = 4
+        elif up and right and not down and not left:
+            action = 5
+        elif down and left and not up and not right:
+            action = 6
+        elif down and right and not up and not left:
+            action = 7
+        elif up and not down:
             action = 0
-        elif pressed[pygame.K_s] or pressed[pygame.K_DOWN]:
+        elif down and not up:
             action = 1
-        elif pressed[pygame.K_a] or pressed[pygame.K_LEFT]:
+        elif left and not right:
             action = 2
-        elif pressed[pygame.K_d] or pressed[pygame.K_RIGHT]:
+        elif right and not left:
             action = 3
         return action
 

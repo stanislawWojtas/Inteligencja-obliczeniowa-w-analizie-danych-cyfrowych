@@ -20,6 +20,10 @@ uv run play_human.py
 
 Controls: `WASD` or arrow keys.
 
+Config example (in code): `CrossyRoadEnv(config={"goal_distance": 200, "max_steps": None})`
+- `goal_distance` controls how far the player must travel to finish.
+- `max_steps=None` means no time/step limit (infinite in time).
+
 ## Train Agent (DQN)
 
 ```bash

@@ -27,7 +27,10 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         cfg = config or {}
         self.width = int(cfg.get("width", 10))
         self.height = int(cfg.get("height", 14))
-        self.max_steps = int(cfg.get("max_steps", 300))
+        self.goal_distance = int(cfg.get("goal_distance", self.height - 1))
+        self.height = max(self.height, self.goal_distance + 1)
+        max_steps_cfg = cfg.get("max_steps")
+        self.max_steps = int(max_steps_cfg) if max_steps_cfg is not None else None
         self.cars_per_lane = int(cfg.get("cars_per_lane", 2))
         self.car_speed_min = float(cfg.get("car_speed_min", 0.05))
         self.car_speed_max = float(cfg.get("car_speed_max", 0.12))
@@ -39,11 +42,12 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
 
         self.safe_block_min = int(cfg.get("safe_block_min", 1))
         self.safe_block_max = int(cfg.get("safe_block_max", 5))
+        self.safe_block_weight_power = float(cfg.get("safe_block_weight_power", 2.0))
         self.traffic_block_min = int(cfg.get("traffic_block_min", 3))
         self.traffic_block_max = int(cfg.get("traffic_block_max", 6))
 
         self.road_start_y = 1
-        self.goal_y = self.height - 1
+        self.goal_y = self.goal_distance
         self.safe_start_y = 0
         self.n_lanes = self.goal_y - self.road_start_y
 
@@ -73,6 +77,10 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.cell_px = 40
         self._surface = None
         self._font = None
+        # Rendered sprite widths in tile units: car=1.0 tile, player=(cell-12)/cell=0.7 tile.
+        self._car_half_width = 0.5
+        self._player_half_width = 0.35
+        self._collision_x_threshold = self._car_half_width + self._player_half_width
 
     def _build_safe_lanes(self) -> set[int]:
         safe_lanes: set[int] = set()
@@ -82,7 +90,11 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             lane += traffic_span
             if lane >= self.goal_y:
                 break
-            safe_span = int(self._np_random.integers(self.safe_block_min, self.safe_block_max + 1))
+            safe_lengths = np.arange(self.safe_block_min, self.safe_block_max + 1)
+            # Favor short green segments (especially length 1) over long ones.
+            weights = 1.0 / np.power(safe_lengths, max(1e-6, self.safe_block_weight_power))
+            probs = weights / weights.sum()
+            safe_span = int(self._np_random.choice(safe_lengths, p=probs))
             safe_end = min(self.goal_y, lane + safe_span)
             for y in range(lane, safe_end):
                 safe_lanes.add(y)
@@ -129,9 +141,14 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         if self.player_y < self.road_start_y or self.player_y >= self.goal_y:
             return False
         for car in self.cars:
-            if car.lane == self.player_y and abs(car.x - self.player_x) < 0.55:
+            if car.lane == self.player_y and self._x_distance(car.x, self.player_x) < self._collision_x_threshold:
                 return True
         return False
+
+    def _x_distance(self, a: float, b: float) -> float:
+        """Distance on wrapped X axis so edges collide correctly."""
+        delta = abs(a - b)
+        return min(delta, abs(self.width - delta))
 
     def _get_obs(self) -> np.ndarray:
         pieces: list[float] = []
@@ -161,7 +178,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
                     continue
                 occupied = 0.0
                 for car in self.cars:
-                    if car.lane == y and abs(car.x - x) < 0.55:
+                    if car.lane == y and self._x_distance(car.x, x) < self._collision_x_threshold:
                         occupied = 1.0
                         break
                 pieces.append(occupied)
@@ -226,7 +243,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             reward += self.reward_finish
             terminated = True
 
-        if self.steps >= self.max_steps:
+        if self.max_steps is not None and self.steps >= self.max_steps:
             truncated = True
 
         obs = self._get_obs()

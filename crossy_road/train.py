@@ -16,6 +16,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timesteps", type=int, default=150_000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--outdir", type=Path, default=Path("artifacts"))
+    parser.add_argument("--render-mode", choices=["human", "rgb_array"], default=None)
     return parser.parse_args()
 
 
@@ -23,7 +24,7 @@ def main() -> None:
     args = parse_args()
     args.outdir.mkdir(parents=True, exist_ok=True)
 
-    env = Monitor(CrossyRoadEnv())
+    env = Monitor(CrossyRoadEnv(render_mode=args.render_mode))
     model = DQN(
         policy="MlpPolicy",
         env=env,

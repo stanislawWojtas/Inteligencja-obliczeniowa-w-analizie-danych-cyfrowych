@@ -1,0 +1,18 @@
+{
+  "model": {
+    "episodes": 30,
+    "win_rate": 0.06666666666666667,
+    "collision_rate": 0.9,
+    "mean_reward": 1.9078936973968006,
+    "mean_steps": 88.7,
+    "survival_time": 88.7
+  },
+  "random_baseline": {
+    "episodes": 30,
+    "win_rate": 0.0,
+    "collision_rate": 0.8333333333333334,
+    "mean_steps": 304.8666666666667
+  },
+  "delta_win_rate": 0.06666666666666667,
+  "delta_survival": -216.16666666666669
+}

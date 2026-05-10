@@ -16,11 +16,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--episodes", type=int, default=100)
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument("--out", type=Path, default=Path("artifacts/eval_summary.json"))
+    parser.add_argument("--render-mode", choices=["human", "rgb_array"], default=None)
+    parser.add_argument("--render-baseline", action="store_true")
+    parser.add_argument("--max-steps", type=int, default=600)
     return parser.parse_args()
 
 
-def evaluate(model: DQN, episodes: int, seed: int) -> dict:
-    env = CrossyRoadEnv()
+def evaluate(
+    model: DQN, episodes: int, seed: int, render_mode: str | None = None, max_steps: int = 600
+) -> dict:
+    env = CrossyRoadEnv(render_mode=render_mode, config={"max_steps": max_steps})
     wins = 0
     collisions = 0
     rewards = []
@@ -56,8 +61,8 @@ def evaluate(model: DQN, episodes: int, seed: int) -> dict:
     }
 
 
-def random_baseline(episodes: int, seed: int) -> dict:
-    env = CrossyRoadEnv()
+def random_baseline(episodes: int, seed: int, render_mode: str | None = None, max_steps: int = 600) -> dict:
+    env = CrossyRoadEnv(render_mode=render_mode, config={"max_steps": max_steps})
     wins = 0
     collisions = 0
     steps = []
@@ -89,8 +94,16 @@ def main() -> None:
     args = parse_args()
     model = DQN.load(str(args.model))
 
-    model_metrics = evaluate(model, episodes=args.episodes, seed=args.seed)
-    baseline_metrics = random_baseline(episodes=args.episodes, seed=args.seed)
+    model_metrics = evaluate(
+        model, episodes=args.episodes, seed=args.seed, render_mode=args.render_mode, max_steps=args.max_steps
+    )
+    baseline_render_mode = args.render_mode if args.render_baseline else None
+    baseline_metrics = random_baseline(
+        episodes=args.episodes,
+        seed=args.seed,
+        render_mode=baseline_render_mode,
+        max_steps=args.max_steps,
+    )
 
     payload = {
         "model": model_metrics,

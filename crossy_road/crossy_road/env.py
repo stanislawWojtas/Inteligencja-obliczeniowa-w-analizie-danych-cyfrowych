@@ -37,9 +37,14 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.player_speed = float(cfg.get("player_speed", 0.2))
         self.obs_radius = int(cfg.get("obs_radius", 2))
         self.reward_forward = float(cfg.get("reward_forward", 0.15))
-        self.reward_step_penalty = float(cfg.get("reward_step_penalty", -0.01))
-        self.reward_collision = float(cfg.get("reward_collision", -1.0))
-        self.reward_finish = float(cfg.get("reward_finish", 2.0))
+        self.reward_step_penalty = float(cfg.get("reward_step_penalty", -0.02))
+        self.reward_collision = float(cfg.get("reward_collision", -3.0))
+        self.reward_finish = float(cfg.get("reward_finish", 5.0))
+        self.reward_score = float(cfg.get("reward_score", 0.4))
+        self.reward_backward = float(cfg.get("reward_backward", -0.03))
+        self.reward_idle = float(cfg.get("reward_idle", -0.02))
+        self.reward_stall = float(cfg.get("reward_stall", -0.08))
+        self.stall_threshold = int(cfg.get("stall_threshold", 6))
 
         self.safe_block_min = int(cfg.get("safe_block_min", 1))
         self.safe_block_max = int(cfg.get("safe_block_max", 5))
@@ -59,6 +64,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.player_y = float(self.safe_start_y)
         self.max_player_y = float(self.safe_start_y)
         self.steps = 0
+        self.no_progress_steps = 0
         self.cars: list[Car] = []
         self.safe_lanes: set[int] = set()
 
@@ -237,6 +243,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.player_y = float(self.safe_start_y)
         self.max_player_y = float(self.safe_start_y)
         self.steps = 0
+        self.no_progress_steps = 0
         self.safe_lanes = self._build_safe_lanes()
         self.cars = self._build_cars()
 
@@ -253,6 +260,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             raise ValueError(f"Invalid action: {action}")
 
         prev_y = self.player_y
+        prev_max_y = self.max_player_y
         self.steps += 1
 
         if action is not None:
@@ -266,6 +274,20 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
 
         if self.player_y > prev_y:
             reward += self.reward_forward
+            self.no_progress_steps = 0
+        elif self.player_y < prev_y:
+            reward += self.reward_backward
+            self.no_progress_steps += 1
+        else:
+            reward += self.reward_idle
+            self.no_progress_steps += 1
+
+        score_delta = max(0.0, self.max_player_y - prev_max_y)
+        if score_delta > 0.0:
+            reward += score_delta * self.reward_score
+
+        if self.no_progress_steps >= self.stall_threshold:
+            reward += self.reward_stall
 
         collision = self._has_collision()
         finished = self.player_y >= self.goal_y

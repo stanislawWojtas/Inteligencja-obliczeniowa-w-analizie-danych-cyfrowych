@@ -1,0 +1,7 @@
+{
+  "timesteps": 30000,
+  "episodes": 629,
+  "mean_reward_last_20": 2.08806680939137,
+  "model_path": "artifacts/dqn_crossy_road.zip",
+  "monitor_csv": "artifacts/monitor.csv"
+}

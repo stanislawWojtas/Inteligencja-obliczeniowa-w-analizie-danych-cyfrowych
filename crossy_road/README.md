@@ -1,6 +1,7 @@
 # Crossy Road Gymnasium Environment
 
 This project provides a custom `gymnasium.Env` for Crossy Road style gameplay with:
+
 - Human-playable `pygame` rendering
 - `rgb_array` rendering for recording
 - DQN training/evaluation pipeline for report metrics
@@ -21,6 +22,7 @@ uv run play_human.py
 Controls: `WASD` or arrow keys.
 
 Config example (in code): `CrossyRoadEnv(config={"goal_distance": 200, "max_steps": None})`
+
 - `goal_distance` controls how far the player must travel to finish.
 - `max_steps=None` means no time/step limit (infinite in time).
 
@@ -31,6 +33,7 @@ uv run train.py --timesteps 100000 --seed 42 --max-steps 500
 ```
 
 Artifacts are saved under `artifacts/`:
+
 - `dqn_crossy_road.zip`
 - `best_model.zip`
 - `evaluations.npz`
@@ -46,6 +49,7 @@ uv run evaluate.py --model artifacts/dqn_crossy_road.zip --episodes 100
 ```
 
 Outputs:
+
 - prints summary JSON
 - writes `artifacts/eval_summary.json`
 - includes action distribution metrics, including `wait_rate` and risk-response rates
@@ -53,17 +57,22 @@ Outputs:
 ## Actions
 
 The base environment action space is `Discrete(5)`:
+
 - `0`: up
 - `1`: down
 - `2`: left
 - `3`: right
 - `4`: wait/no-op
 
-The DQN training and evaluation pipeline wraps the environment with a smaller `Discrete(2)` action space:
-- `0`: up
-- `1`: wait/no-op
+The DQN training and evaluation pipeline uses the full `Discrete(5)` action space so the policy can dodge traffic:
 
-This keeps human play flexible while preventing the trained policy from learning useless lateral/backward jitter. Crossing this map only requires advancing when safe and waiting for traffic gaps.
+- `0`: up
+- `1`: down
+- `2`: left
+- `3`: right
+- `4`: wait/no-op
+
+Existing saved models trained before this change only know `up` and `wait`; retrain to let the agent learn escape moves.
 
 ## Notes for TODO.md
 

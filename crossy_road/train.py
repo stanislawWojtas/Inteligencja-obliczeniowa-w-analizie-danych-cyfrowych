@@ -9,7 +9,7 @@ from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
 
-from crossy_road import ACTION_UP, ACTION_WAIT, ActionSubsetWrapper, CrossyRoadEnv
+from crossy_road import ALL_ACTIONS, ActionSubsetWrapper, CrossyRoadEnv
 
 
 def parse_args() -> argparse.Namespace:
@@ -29,7 +29,7 @@ def main() -> None:
     args.outdir.mkdir(parents=True, exist_ok=True)
 
     env_config = {"max_steps": args.max_steps}
-    train_action_map = [ACTION_UP, ACTION_WAIT]
+    train_action_map = list(ALL_ACTIONS)
     env = Monitor(
         ActionSubsetWrapper(
             CrossyRoadEnv(render_mode=args.render_mode, config=env_config),

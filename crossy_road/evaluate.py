@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 from stable_baselines3 import DQN
 
-from crossy_road import ACTION_UP, ACTION_WAIT, ActionSubsetWrapper, CrossyRoadEnv
+from crossy_road import ACTION_UP, ACTION_WAIT, ALL_ACTIONS, ActionSubsetWrapper, CrossyRoadEnv
 from crossy_road.env import ACTION_NAMES
 
 
@@ -65,7 +65,7 @@ def evaluate(
 ) -> dict:
     env = ActionSubsetWrapper(
         CrossyRoadEnv(render_mode=render_mode, config={"max_steps": max_steps}),
-        actions=(ACTION_UP, ACTION_WAIT),
+        actions=ALL_ACTIONS,
     )
     wins = 0
     collisions = 0
@@ -126,7 +126,7 @@ def evaluate(
 def random_baseline(episodes: int, seed: int, render_mode: str | None = None, max_steps: int = 500) -> dict:
     env = ActionSubsetWrapper(
         CrossyRoadEnv(render_mode=render_mode, config={"max_steps": max_steps}),
-        actions=(ACTION_UP, ACTION_WAIT),
+        actions=ALL_ACTIONS,
     )
     wins = 0
     collisions = 0

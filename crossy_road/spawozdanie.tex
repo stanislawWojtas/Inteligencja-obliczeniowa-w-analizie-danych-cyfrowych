@@ -17,7 +17,7 @@
 }
 
 \title{Sprawozdanie z projektu 4\\Własne środowisko Gymnasium}
-\author{Autorzy: \textit{uzupełnić}}
+\author{Autorzy: Marcin Wolder, Stanisław Wojtas}
 \date{\today}
 
 \begin{document}
@@ -84,7 +84,7 @@ Do rozwiązania problemu wykorzystano algorytm DQN z biblioteki Stable-Baselines
     \item \texttt{target\_update\_interval = 500}.
 \end{itemize}
 
-W trakcie treningu użyto wrappera ograniczającego przestrzeń akcji do dwóch decyzji: \texttt{up} oraz \texttt{wait}. Było to świadome uproszczenie. W badanej wersji mapy skuteczne przejście wymaga przede wszystkim rozpoznania momentu, w którym należy ruszyć do przodu, oraz momentu, w którym należy poczekać. Ruchy w lewo, w prawo i w dół zwiększały liczbę niepotrzebnych wariantów i utrudniały stabilne uczenie.
+W aktualnej wersji treningu użyto pełnej przestrzeni pięciu akcji, czyli \texttt{up}, \texttt{down}, \texttt{left}, \texttt{right} oraz \texttt{wait}. Dzięki temu agent może nie tylko przesuwać się naprzód, ale także wykonywać manewry korygujące pozycję i reagować na lokalny układ ruchu. Jest to ustawienie trudniejsze od wariantu z ograniczoną liczbą akcji, ponieważ powiększa przestrzeń decyzji i zwiększa ryzyko uczenia nieefektywnych zachowań bocznych.
 
 Podczas treningu środowisko było okresowo ewaluowane, a najlepszy model zapisywano do pliku \texttt{best\_model.zip}. Następnie właśnie ten najlepszy checkpoint był używany jako wynik końcowy.
 
@@ -98,9 +98,9 @@ Podczas treningu środowisko było okresowo ewaluowane, a najlepszy model zapisy
 Do renderowania wykorzystano bibliotekę \texttt{pygame}. Dzięki temu środowisko można uruchomić zarówno w trybie przeznaczonym dla człowieka, jak i w trybie przydatnym przy analizie działania agenta. Spełnia to wymaganie rozszerzenia projektu o warstwę graficzną.
 
 \section{Eksperymenty}
-Uczenie przeprowadzono dla limitu \texttt{max\_steps = 500}. Według zapisanego podsumowania treningu agent rozegrał 1370 epizodów, a średnia nagroda z ostatnich 20 epizodów wyniosła 17.41375. Najlepszy wynik ewaluacyjny uzyskany w trakcie treningu miał średnią nagrodę 15.74125.
+Uczenie przeprowadzono dla limitu \texttt{max\_steps = 500}. Według aktualnego podsumowania treningu agent rozegrał 959 epizodów, a średnia nagroda z ostatnich 20 epizodów wyniosła -0.5925. Najlepszy wynik ewaluacyjny uzyskany w trakcie treningu miał średnią nagrodę 8.439.
 
-Końcowy model został porównany z bazą losową. Ewaluacja zapisana w pliku \texttt{artifacts/eval\_summary.json} została wykonana dla 10 epizodów dla modelu oraz 10 epizodów dla polityki losowej. Wyniki zestawiono w tabeli~\ref{tab:wyniki}.
+Końcowy model został porównany z bazą losową. Aktualna ewaluacja została wykonana dla 100 epizodów dla modelu oraz 100 epizodów dla polityki losowej. Wyniki zestawiono w tabeli~\ref{tab:wyniki}.
 
 \begin{table}[H]
 \centering
@@ -110,23 +110,26 @@ Końcowy model został porównany z bazą losową. Ewaluacja zapisana w pliku \t
 \toprule
 Metryka & Agent DQN & Polityka losowa \\
 \midrule
-Win rate & 0.60 & 0.00 \\
-Collision rate & 0.40 & 1.00 \\
-Średnia nagroda & 11.9155 & --- \\
-Średnia liczba kroków / czas przeżycia & 87.3 & 28.7 \\
-Udział akcji \texttt{up} & 0.656 & 0.537 \\
-Udział akcji \texttt{wait} & 0.344 & 0.463 \\
-Wait przy ryzykownym ruchu naprzód & 0.967 & 0.421 \\
+Win rate & 0.49 & 0.00 \\
+Collision rate & 0.50 & 0.77 \\
+Truncation rate & 0.01 & 0.23 \\
+Średnia nagroda & 4.9868 & --- \\
+Średnia liczba kroków / czas przeżycia & 103.28 & 311.53 \\
+Udział akcji \texttt{up} & 0.487 & 0.204 \\
+Udział akcji \texttt{wait} & 0.341 & 0.199 \\
+Wait przy ryzykownym ruchu naprzód & 0.579 & 0.201 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Najważniejszy wniosek jest taki, że agent uczony metodą DQN nie działa losowo. W 60\% epizodów dociera do celu, podczas gdy polityka losowa nie wygrała ani razu. Dodatkowo agent żyje średnio ponad trzykrotnie dłużej niż baza losowa. Szczególnie istotna jest metryka \textit{wait when forward risky rate}: model czeka w 96.7\% sytuacji, w których ruch do przodu był ryzykowny. Dla polityki losowej analogiczny wynik wynosi około 42.1\%, co odpowiada zachowaniu przypadkowemu.
+Najważniejszy wniosek jest taki, że agent uczony metodą DQN nie działa losowo, ponieważ w 49\% epizodów dociera do celu, podczas gdy polityka losowa nie wygrała ani razu. Dodatkowo współczynnik kolizji modelu jest wyraźnie niższy niż dla bazy losowej, a średnia nagroda modelu jest dodatnia. Oznacza to, że agent nauczył się częściowo rozwiązywać zadanie i robi to zauważalnie lepiej niż polityka przypadkowa.
 
-Rozkład akcji także potwierdza strategię. Model nie naciska wyłącznie ruchu do przodu, lecz regularnie korzysta z oczekiwania, kiedy sytuacja na pasie ruchu tego wymaga. Oznacza to, że nauczył się zależności pomiędzy obserwacją ruchu samochodów a wyborem akcji.
+Istotna jest także metryka \textit{wait when forward risky rate}: model czeka w około 57.9\% sytuacji, w których ruch do przodu był ryzykowny, natomiast polityka losowa robi to tylko w około 20.1\% takich przypadków. Rozkład akcji także wskazuje na zachowanie nielosowe. Agent wyraźnie preferuje ruch w górę, ale często korzysta też z oczekiwania oraz sporadycznych ruchów bocznych i w dół. W porównaniu z polityką losową nie rozkłada akcji równomiernie, tylko wykazuje preferencje odpowiadające próbie osiągnięcia celu.
+
+Warto jednak ostrożnie interpretować średni czas przeżycia. Polityka losowa ma tu wyższą wartość głównie dlatego, że w wielu epizodach nie kończy gry kolizją ani sukcesem, tylko dochodzi do limitu 500 kroków i zostaje ucięta. Z tego powodu dla tego zadania bardziej miarodajny jest \textit{win rate} oraz analiza decyzji podejmowanych w sytuacjach ryzyka niż sama liczba kroków.
 
 \section{Wnioski końcowe}
-Projekt zakończył się powodzeniem. Udało się przygotować własne środowisko Gymnasium o bardziej złożonej strukturze niż prosta plansza dyskretna, wytrenować agenta rozwiązującego zadanie oraz dodać tryb graficzny. Otrzymane wyniki wskazują, że agent nauczył się użytecznej polityki i podejmuje decyzje zgodne ze strategią przechodzenia przez ruchliwą drogę.
+Projekt zakończył się powodzeniem. Udało się przygotować własne środowisko Gymnasium o bardziej złożonej strukturze niż prosta plansza dyskretna, wytrenować agenta oraz dodać tryb graficzny. Otrzymane wyniki pokazują, że agent nauczył się użytecznej, nielosowej polityki, potrafi ukończyć niemal połowę epizodów i osiąga wyraźnie lepsze wyniki niż baza losowa.
 
 W przyszłości środowisko można rozwijać dalej, na przykład przez zwiększenie liczby typów przeszkód, dodanie dynamicznie zmieniających się pasów lub porównanie DQN z innymi algorytmami uczenia ze wzmocnieniem, takimi jak PPO. Już w obecnej postaci projekt spełnia jednak wymagania zadania i pokazuje pełny proces: od zaprojektowania środowiska, przez uczenie agenta, aż po ocenę jakości wyuczonej polityki.
 

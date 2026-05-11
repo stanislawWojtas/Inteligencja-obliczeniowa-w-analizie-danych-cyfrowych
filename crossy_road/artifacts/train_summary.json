@@ -1,18 +1,21 @@
 {
   "timesteps": 100000,
-  "episodes": 1370,
-  "mean_reward_last_20": 17.41375,
+  "episodes": 959,
+  "mean_reward_last_20": -0.5924999999999997,
   "env_config": {
     "max_steps": 500
   },
   "training_actions": [
     0,
+    1,
+    2,
+    3,
     4
   ],
   "eval_config": {
     "eval_freq": 10000,
     "eval_episodes": 20,
-    "best_mean_reward": 15.741250000000003,
+    "best_mean_reward": 8.439000000000002,
     "best_model_path": "artifacts/best_model.zip"
   },
   "dqn_config": {

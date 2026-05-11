@@ -5,6 +5,7 @@ from crossy_road.env import (
     ACTION_LEFT,
     ACTION_UP,
     ACTION_WAIT,
+    ALL_ACTIONS,
     Car,
     CrossyRoadEnv,
 )
@@ -27,7 +28,7 @@ def test_wait_action_is_valid_and_invalid_action_raises():
         env.step(5)
 
 
-def test_training_action_wrapper_maps_forward_and_wait_only():
+def test_training_action_wrapper_maps_subset_actions():
     env = ActionSubsetWrapper(make_env(), actions=(ACTION_UP, ACTION_WAIT))
 
     assert env.action_space.n == 2
@@ -42,6 +43,25 @@ def test_training_action_wrapper_maps_forward_and_wait_only():
 
     with pytest.raises(ValueError, match="Invalid training action"):
         env.step(2)
+
+
+def test_training_pipeline_actions_cover_all_escape_moves():
+    env = ActionSubsetWrapper(make_env(), actions=ALL_ACTIONS)
+
+    assert env.action_space.n == len(ALL_ACTIONS)
+    assert env.actions == ALL_ACTIONS
+
+    start_x = env.unwrapped.player_x
+    env.step(2)
+    assert env.unwrapped.player_x < start_x
+
+    moved_x = env.unwrapped.player_x
+    env.step(3)
+    assert env.unwrapped.player_x > moved_x
+
+    start_y = env.unwrapped.player_y
+    env.step(1)
+    assert env.unwrapped.player_y <= start_y
 
 
 def test_wait_keeps_player_still_while_cars_advance():

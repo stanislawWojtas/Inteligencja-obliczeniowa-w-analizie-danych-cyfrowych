@@ -6,7 +6,9 @@
 ## 4 PKT — Base
 
 - [x] **Gymnasium env** — implement `CrossyRoadEnv(gymnasium.Env)`:
-  - [x] `__init__`: define `observation_space`, `action_space` (4 directions)
+  - [x] `__init__`: define `observation_space`, `action_space` (4 directions + wait)
+  - [x] Training wrapper: restrict DQN to forward/wait actions to avoid lateral/backward jitter
+  - [x] Training callback: evaluate periodically and save the best checkpoint instead of the last unstable DQN weights
   - [x] `reset()`: return initial obs + info
   - [x] `step(action)`: move player, check collisions, return `obs, reward, terminated, truncated, info`
   - [x] Game logic: player crosses road, cars move, goal = reach other side

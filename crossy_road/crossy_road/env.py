@@ -16,6 +16,29 @@ class Car:
     direction: int
 
 
+ACTION_UP = 0
+ACTION_DOWN = 1
+ACTION_LEFT = 2
+ACTION_RIGHT = 3
+ACTION_WAIT = 4
+
+ACTION_NAMES = {
+    ACTION_UP: "up",
+    ACTION_DOWN: "down",
+    ACTION_LEFT: "left",
+    ACTION_RIGHT: "right",
+    ACTION_WAIT: "wait",
+}
+
+ACTION_VECTORS = {
+    ACTION_UP: (0.0, 1.0),
+    ACTION_DOWN: (0.0, -1.0),
+    ACTION_LEFT: (-1.0, 0.0),
+    ACTION_RIGHT: (1.0, 0.0),
+    ACTION_WAIT: (0.0, 0.0),
+}
+
+
 class CrossyRoadEnv(gym.Env[np.ndarray, int]):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
 
@@ -36,15 +59,21 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.car_speed_max = float(cfg.get("car_speed_max", 0.12))
         self.player_speed = float(cfg.get("player_speed", 0.2))
         self.obs_radius = int(cfg.get("obs_radius", 2))
-        self.reward_forward = float(cfg.get("reward_forward", 0.15))
-        self.reward_step_penalty = float(cfg.get("reward_step_penalty", -0.02))
-        self.reward_collision = float(cfg.get("reward_collision", -3.0))
-        self.reward_finish = float(cfg.get("reward_finish", 5.0))
-        self.reward_score = float(cfg.get("reward_score", 0.4))
-        self.reward_backward = float(cfg.get("reward_backward", -0.03))
-        self.reward_idle = float(cfg.get("reward_idle", -0.02))
-        self.reward_stall = float(cfg.get("reward_stall", -0.08))
-        self.stall_threshold = int(cfg.get("stall_threshold", 6))
+        self.reward_step_penalty = float(cfg.get("reward_step_penalty", -0.01))
+        self.reward_collision = float(cfg.get("reward_collision", -20.0))
+        self.reward_finish = float(cfg.get("reward_finish", 20.0))
+        self.reward_progress = float(cfg.get("reward_progress", cfg.get("reward_score", 0.75)))
+        self.reward_backward = float(cfg.get("reward_backward", -0.08))
+        self.reward_sideways = float(cfg.get("reward_sideways", -0.03))
+        self.reward_wait = float(cfg.get("reward_wait", 0.0))
+        self.reward_safe_wait = float(cfg.get("reward_safe_wait", 0.015))
+        self.reward_unsafe_forward = float(cfg.get("reward_unsafe_forward", -0.15))
+        self.reward_unsafe_wait = float(cfg.get("reward_unsafe_wait", -0.15))
+        self.reward_stall = float(cfg.get("reward_stall", -0.03))
+        self.stall_threshold = int(cfg.get("stall_threshold", 25))
+        self.safety_horizon = int(cfg.get("safety_horizon", 8))
+        self.safety_distance = float(cfg.get("safety_distance", 1.1))
+        self.safety_margin = float(cfg.get("safety_margin", 0.05))
 
         self.safe_block_min = int(cfg.get("safe_block_min", 1))
         self.safe_block_max = int(cfg.get("safe_block_max", 5))
@@ -68,11 +97,11 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.cars: list[Car] = []
         self.safe_lanes: set[int] = set()
 
-        self.action_space = spaces.Discrete(8)
+        self.action_space = spaces.Discrete(5)
 
         nearest_per_lane = self.n_lanes
         local_occ_size = (2 * self.obs_radius + 1) ** 2
-        obs_dim = 2 + nearest_per_lane * 3 + local_occ_size
+        obs_dim = 4 + nearest_per_lane * 3 + local_occ_size
         self.observation_space = spaces.Box(
             low=-1.0,
             high=1.0,
@@ -128,29 +157,23 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
     def _lane_index(self, lane_y: int) -> int:
         return lane_y - self.road_start_y
 
-    def _move_player(self, action: int) -> None:
-        dx = 0.0
-        dy = 0.0
-        if action == 0:  # up
-            dy = 1.0
-        elif action == 1:  # down
-            dy = -1.0
-        elif action == 2:  # left
-            dx = -1.0
-        elif action == 3:  # right
-            dx = 1.0
-        elif action == 4:  # up-left
-            dx, dy = -1.0, 1.0
-        elif action == 5:  # up-right
-            dx, dy = 1.0, 1.0
-        elif action == 6:  # down-left
-            dx, dy = -1.0, -1.0
-        elif action == 7:  # down-right
-            dx, dy = 1.0, -1.0
+    def _action_vector(self, action: int | None) -> tuple[float, float]:
+        if action is None:
+            return ACTION_VECTORS[ACTION_WAIT]
+        return ACTION_VECTORS[int(action)]
+
+    def _move_player(self, action: int | None) -> None:
+        self.player_x, self.player_y = self._project_player_position(action)
+
+    def _project_player_position(self, action: int | None) -> tuple[float, float]:
+        dx, dy = self._action_vector(action)
+        if dx == 0.0 and dy == 0.0:
+            return self.player_x, self.player_y
 
         scale = self.player_speed / np.sqrt(2.0) if dx != 0.0 and dy != 0.0 else self.player_speed
-        self.player_x = float(np.clip(self.player_x + dx * scale, 0.0, float(self.width - 1)))
-        self.player_y = float(np.clip(self.player_y + dy * scale, float(self.safe_start_y), float(self.goal_y)))
+        next_x = float(np.clip(self.player_x + dx * scale, 0.0, float(self.width - 1)))
+        next_y = float(np.clip(self.player_y + dy * scale, float(self.safe_start_y), float(self.goal_y)))
+        return next_x, next_y
 
     def _update_cars(self) -> None:
         for car in self.cars:
@@ -182,27 +205,93 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
                     return True
         return False
 
+    def _position_has_projected_traffic(self, player_x: float, player_y: float, horizon: int) -> bool:
+        player_bottom = player_y + self._sprite_inset
+        player_top = player_bottom + self._player_height
+
+        if player_top <= self.road_start_y or player_bottom >= self.goal_y:
+            return False
+
+        for car in self.cars:
+            car_bottom = car.lane + self._sprite_inset
+            car_top = car_bottom + self._car_height
+            if not self._overlap_1d(player_bottom, player_top, car_bottom, car_top):
+                continue
+
+            for tick in range(horizon + 1):
+                projected_x = (car.x + car.direction * car.speed * tick) % self.width
+                if self._x_distance(projected_x, player_x) < self.safety_distance:
+                    return True
+        return False
+
+    def _position_has_projected_collision(self, player_x: float, player_y: float, ticks_ahead: int) -> bool:
+        player_left = player_x + self._sprite_inset - self.safety_margin
+        player_right = player_left + self._player_width + 2.0 * self.safety_margin
+        player_bottom = player_y + self._sprite_inset - self.safety_margin
+        player_top = player_bottom + self._player_height + 2.0 * self.safety_margin
+
+        if player_top <= self.road_start_y or player_bottom >= self.goal_y:
+            return False
+
+        for car in self.cars:
+            car_bottom = car.lane + self._sprite_inset
+            car_top = car_bottom + self._car_height
+            if not self._overlap_1d(player_bottom, player_top, car_bottom, car_top):
+                continue
+
+            projected_x = (car.x + car.direction * car.speed * ticks_ahead) % self.width
+            for car_x in (projected_x - self.width, projected_x, projected_x + self.width):
+                car_left = car_x
+                car_right = car_left + self._car_width
+                if self._overlap_1d(player_left, player_right, car_left, car_right):
+                    return True
+        return False
+
+    def _forward_path_has_projected_traffic(self, action: int | None = ACTION_UP) -> bool:
+        player_x, player_y = self._project_player_position(action)
+        for ticks_ahead in range(1, self.safety_horizon + 1):
+            if self._position_has_projected_collision(player_x, player_y, ticks_ahead):
+                return True
+            player_x, player_y = self._project_position_from(player_x, player_y, ACTION_UP)
+        return False
+
     def _x_distance(self, a: float, b: float) -> float:
         """Distance on wrapped X axis so edges collide correctly."""
         delta = abs(a - b)
         return min(delta, abs(self.width - delta))
 
+    def _signed_x_delta(self, a: float, b: float) -> float:
+        """Signed shortest delta from b to a on the wrapped X axis."""
+        return float((a - b + self.width / 2.0) % self.width - self.width / 2.0)
+
     def _overlap_1d(self, a_min: float, a_max: float, b_min: float, b_max: float) -> bool:
         return a_min < b_max and b_min < a_max
+
+    def _project_position_from(self, player_x: float, player_y: float, action: int | None) -> tuple[float, float]:
+        dx, dy = self._action_vector(action)
+        if dx == 0.0 and dy == 0.0:
+            return player_x, player_y
+
+        scale = self.player_speed / np.sqrt(2.0) if dx != 0.0 and dy != 0.0 else self.player_speed
+        next_x = float(np.clip(player_x + dx * scale, 0.0, float(self.width - 1)))
+        next_y = float(np.clip(player_y + dy * scale, float(self.safe_start_y), float(self.goal_y)))
+        return next_x, next_y
 
     def _get_obs(self) -> np.ndarray:
         pieces: list[float] = []
         px = (self.player_x / max(1, self.width - 1)) * 2.0 - 1.0
         py = (self.player_y / max(1, self.goal_y)) * 2.0 - 1.0
         pieces.extend([px, py])
+        pieces.append(1.0 if self._forward_path_has_projected_traffic(ACTION_UP) else -1.0)
+        pieces.append(1.0 if self._position_has_projected_collision(self.player_x, self.player_y, 1) else -1.0)
 
         for lane in range(self.road_start_y, self.goal_y):
             lane_cars = [c for c in self.cars if c.lane == lane]
             if not lane_cars:
                 pieces.extend([1.0, 0.0, 0.0])
                 continue
-            nearest = min(lane_cars, key=lambda c: self._x_distance(c.x, self.player_x))
-            rel_dist = (nearest.x - self.player_x) / max(1, self.width)
+            nearest = min(lane_cars, key=lambda c: abs(self._signed_x_delta(c.x, self.player_x)))
+            rel_dist = self._signed_x_delta(nearest.x, self.player_x) / max(1e-6, self.width / 2.0)
             rel_dist = float(np.clip(rel_dist, -1.0, 1.0))
             speed = nearest.speed / max(1e-6, self.car_speed_max)
             speed = float(np.clip(speed, 0.0, 1.0))
@@ -261,31 +350,38 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
 
         prev_y = self.player_y
         prev_max_y = self.max_player_y
+        unsafe_forward = self._forward_path_has_projected_traffic(ACTION_UP)
+        unsafe_wait = self._position_has_projected_collision(self.player_x, self.player_y, 1)
         self.steps += 1
 
-        if action is not None:
-            self._move_player(action)
+        self._move_player(action)
         self.max_player_y = max(self.max_player_y, self.player_y)
         self._update_cars()
 
         reward = self.reward_step_penalty
         terminated = False
         truncated = False
-
-        if self.player_y > prev_y:
-            reward += self.reward_forward
-            self.no_progress_steps = 0
-        elif self.player_y < prev_y:
-            reward += self.reward_backward
-            self.no_progress_steps += 1
-        else:
-            reward += self.reward_idle
-            self.no_progress_steps += 1
+        dx, dy = self._action_vector(action)
 
         score_delta = max(0.0, self.max_player_y - prev_max_y)
         if score_delta > 0.0:
-            reward += score_delta * self.reward_score
+            reward += score_delta * self.reward_progress
+            self.no_progress_steps = 0
+        elif dy < 0.0 or self.player_y < prev_y:
+            reward += self.reward_backward
+            self.no_progress_steps += 1
+        else:
+            reward += self.reward_wait
+            self.no_progress_steps += 1
 
+        if dx != 0.0:
+            reward += self.reward_sideways
+        if dx == 0.0 and dy == 0.0 and unsafe_wait:
+            reward += self.reward_unsafe_wait
+        elif dx == 0.0 and dy == 0.0 and unsafe_forward:
+            reward += self.reward_safe_wait
+        elif dy > 0.0 and unsafe_forward:
+            reward += self.reward_unsafe_forward
         if self.no_progress_steps >= self.stall_threshold:
             reward += self.reward_stall
 
@@ -306,6 +402,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         info = self._get_info()
         info["collision"] = collision
         info["finished"] = finished
+        info["action_name"] = ACTION_NAMES[ACTION_WAIT if action is None else int(action)]
 
         if self.render_mode == "human":
             self.render()
@@ -351,15 +448,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         left = pressed[pygame.K_a] or pressed[pygame.K_LEFT]
         right = pressed[pygame.K_d] or pressed[pygame.K_RIGHT]
 
-        if up and left and not down and not right:
-            action = 4
-        elif up and right and not down and not left:
-            action = 5
-        elif down and left and not up and not right:
-            action = 6
-        elif down and right and not up and not left:
-            action = 7
-        elif up and not down:
+        if up and not down:
             action = 0
         elif down and not up:
             action = 1

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import gymnasium as gym
@@ -114,6 +115,8 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self.cell_px = 40
         self._surface = None
         self._font = None
+        self._car_sprite_left = None
+        self._car_sprite_right = None
         self._sprite_inset = 6.0 / self.cell_px
         self._car_width = 1.0
         self._car_height = 1.0 - 2.0 * self._sprite_inset
@@ -421,6 +424,11 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             self.clock = pygame.time.Clock()
             self._surface = pygame.Surface((w, h))
             self._font = pygame.font.Font(None, 40)
+            sprite_path = Path(__file__).resolve().parent.parent / "car.png"
+            car_sprite = pygame.image.load(str(sprite_path)).convert_alpha()
+            car_sprite = pygame.transform.smoothscale(car_sprite, (self.cell_px, self.cell_px))
+            self._car_sprite_left = car_sprite
+            self._car_sprite_right = pygame.transform.flip(car_sprite, True, False)
 
     def get_human_action(self, default_action: int | None = None) -> int | None:
         if self.render_mode != "human":
@@ -488,14 +496,18 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         for car in self.cars:
             x_px = int(car.x * self.cell_px)
             y_px = (self.height - 1 - car.lane) * self.cell_px
-            pygame.draw.rect(self._surface, (220, 60, 60), (x_px, y_px + 6, self.cell_px, self.cell_px - 12))
+            sprite = self._car_sprite_right if car.direction > 0 else self._car_sprite_left
+            assert sprite is not None
+            self._surface.blit(sprite, (x_px, y_px))
 
         player_y_px = (self.height - 1 - self.player_y) * self.cell_px
         player_x_px = self.player_x * self.cell_px
-        pygame.draw.rect(
+        player_center = (int(player_x_px + self.cell_px / 2), int(player_y_px + self.cell_px / 2))
+        pygame.draw.circle(
             self._surface,
             (255, 255, 80),
-            (player_x_px + 6, player_y_px + 6, self.cell_px - 12, self.cell_px - 12),
+            player_center,
+            int((self.cell_px - 12) / 2),
         )
 
         assert self._font is not None
@@ -523,3 +535,5 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             self.clock = None
             self._surface = None
             self._font = None
+            self._car_sprite_left = None
+            self._car_sprite_right = None

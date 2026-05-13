@@ -9,7 +9,7 @@ from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
 
-from crossy_road import ALL_ACTIONS, ActionSubsetWrapper, CrossyRoadEnv
+from crossy_road import ALL_ACTIONS, ActionSubsetWrapper, CrossyRoadEnv, plot_learning_curve
 
 
 def parse_args() -> argparse.Namespace:
@@ -83,6 +83,10 @@ def main() -> None:
         for idx, (r, l) in enumerate(zip(env.episode_returns, env.episode_lengths), start=1):
             writer.writerow([idx, float(r), int(l)])
 
+    evaluations_npz = args.outdir / "evaluations.npz"
+    learning_curve_path = args.outdir / "learning_curve.png"
+    plot_learning_curve(monitor_csv, evaluations_npz if evaluations_npz.exists() else None, learning_curve_path)
+
     summary = {
         "timesteps": args.timesteps,
         "episodes": len(env.episode_returns),
@@ -108,6 +112,8 @@ def main() -> None:
         },
         "model_path": str(model_path),
         "monitor_csv": str(monitor_csv),
+        "evaluations_npz": str(evaluations_npz),
+        "learning_curve_path": str(learning_curve_path),
     }
     (args.outdir / "train_summary.json").write_text(json.dumps(summary, indent=2))
 

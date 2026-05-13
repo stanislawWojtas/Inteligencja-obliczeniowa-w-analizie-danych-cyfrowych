@@ -15,7 +15,7 @@
   "eval_config": {
     "eval_freq": 10000,
     "eval_episodes": 20,
-    "best_mean_reward": 8.439000000000002,
+    "best_mean_reward": 13.741,
     "best_model_path": "artifacts/best_model.zip"
   },
   "dqn_config": {
@@ -30,5 +30,7 @@
     "exploration_final_eps": 0.02
   },
   "model_path": "artifacts/dqn_crossy_road.zip",
-  "monitor_csv": "artifacts/monitor.csv"
+  "monitor_csv": "artifacts/monitor.csv",
+  "evaluations_npz": "artifacts/evaluations.npz",
+  "learning_curve_path": "artifacts/learning_curve.png"
 }

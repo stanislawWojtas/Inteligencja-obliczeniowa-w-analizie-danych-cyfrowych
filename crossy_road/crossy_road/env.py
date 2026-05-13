@@ -100,6 +100,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self._np_random = np.random.default_rng()
         self.player_x = float(self.width // 2)
         self.player_y = float(self.safe_start_y)
+        self.player_facing = ACTION_UP
         self.max_player_y = float(self.safe_start_y)
         self.steps = 0
         self.no_progress_steps = 0
@@ -125,6 +126,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
         self._font = None
         self._car_sprite_left = None
         self._car_sprite_right = None
+        self._player_sprites: dict[int, Any] = {}
         self._sprite_inset = 6.0 / self.cell_px
         self._car_width = 1.0
         self._car_height = 1.0 - 2.0 * self._sprite_inset
@@ -341,6 +343,7 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
 
         self.player_x = float(self.width // 2)
         self.player_y = float(self.safe_start_y)
+        self.player_facing = ACTION_UP
         self.max_player_y = float(self.safe_start_y)
         self.steps = 0
         self.no_progress_steps = 0
@@ -358,6 +361,8 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
     def step(self, action: int | None):
         if action is not None and not self.action_space.contains(action):
             raise ValueError(f"Invalid action: {action}")
+        if action in (ACTION_UP, ACTION_DOWN, ACTION_LEFT, ACTION_RIGHT):
+            self.player_facing = int(action)
 
         prev_y = self.player_y
         prev_max_y = self.max_player_y
@@ -437,6 +442,18 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             car_sprite = pygame.transform.smoothscale(car_sprite, (self.cell_px, self.cell_px))
             self._car_sprite_left = car_sprite
             self._car_sprite_right = pygame.transform.flip(car_sprite, True, False)
+            player_assets = {
+                ACTION_UP: "player_up.png",
+                ACTION_DOWN: "player_down.png",
+                ACTION_LEFT: "player_left.png",
+                ACTION_RIGHT: "player_right.png",
+            }
+            self._player_sprites = {}
+            for action, filename in player_assets.items():
+                player_path = Path(__file__).resolve().parent.parent / filename
+                sprite = pygame.image.load(str(player_path)).convert_alpha()
+                sprite = pygame.transform.smoothscale(sprite, (self.cell_px, self.cell_px))
+                self._player_sprites[action] = sprite
 
     def get_human_action(self, default_action: int | None = None) -> int | None:
         if self.render_mode != "human":
@@ -508,15 +525,19 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             assert sprite is not None
             self._surface.blit(sprite, (x_px, y_px))
 
-        player_y_px = (self.height - 1 - self.player_y) * self.cell_px
-        player_x_px = self.player_x * self.cell_px
-        player_center = (int(player_x_px + self.cell_px / 2), int(player_y_px + self.cell_px / 2))
-        pygame.draw.circle(
-            self._surface,
-            (255, 255, 80),
-            player_center,
-            int((self.cell_px - 12) / 2),
-        )
+        player_y_px = int((self.height - 1 - self.player_y) * self.cell_px)
+        player_x_px = int(self.player_x * self.cell_px)
+        player_sprite = self._player_sprites.get(self.player_facing)
+        if player_sprite is None:
+            player_center = (int(player_x_px + self.cell_px / 2), int(player_y_px + self.cell_px / 2))
+            pygame.draw.circle(
+                self._surface,
+                (255, 255, 80),
+                player_center,
+                int((self.cell_px - 12) / 2),
+            )
+        else:
+            self._surface.blit(player_sprite, (player_x_px, player_y_px))
 
         assert self._font is not None
         score = int(self.max_player_y - self.safe_start_y)
@@ -545,3 +566,4 @@ class CrossyRoadEnv(gym.Env[np.ndarray, int]):
             self._font = None
             self._car_sprite_left = None
             self._car_sprite_right = None
+            self._player_sprites = {}

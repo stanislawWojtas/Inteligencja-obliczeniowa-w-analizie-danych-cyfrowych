@@ -37,6 +37,7 @@ Artifacts are saved under `artifacts/`:
 - `dqn_crossy_road.zip`
 - `best_model.zip`
 - `evaluations.npz`
+- `learning_curve.png`
 - `monitor.csv`
 - `train_summary.json`
 
@@ -53,6 +54,16 @@ Outputs:
 - prints summary JSON
 - writes `artifacts/eval_summary.json`
 - includes action distribution metrics, including `wait_rate` and risk-response rates
+
+## Notebook Workflow
+
+Open `crossy_road_workflow.ipynb` for a notebook version of the full workflow:
+
+- setup commands with `uv`
+- training and evaluation commands
+- learning-curve display from `artifacts/learning_curve.png`
+- inline `rgb_array` gameplay rendering in the notebook
+- placeholders for screenshots from human play and notebook playback
 
 ## Actions
 

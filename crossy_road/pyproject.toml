@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "gymnasium>=0.29.1",
+    "ipykernel>=6.29.5",
+    "matplotlib>=3.10.0",
     "numpy>=1.26.0",
     "pygame>=2.5.0",
     "rich>=13.7.0",

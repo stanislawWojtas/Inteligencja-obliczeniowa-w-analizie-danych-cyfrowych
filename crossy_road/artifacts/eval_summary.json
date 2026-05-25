@@ -1,0 +1,58 @@
+{
+  "model": {
+    "episodes": 100,
+    "win_rate": 0.41,
+    "collision_rate": 0.59,
+    "truncation_rate": 0.0,
+    "mean_reward": 0.31560000000000105,
+    "mean_steps": 87.01,
+    "survival_time": 87.01,
+    "action_counts": {
+      "up": 5195,
+      "down": 751,
+      "left": 1363,
+      "right": 924,
+      "wait": 468
+    },
+    "action_rates": {
+      "up": 0.59705780944719,
+      "down": 0.08631191817032526,
+      "left": 0.15664866107343983,
+      "right": 0.10619469026548672,
+      "wait": 0.053786921043558214
+    },
+    "wait_rate": 0.053786921043558214,
+    "forward_risk_steps": 3037,
+    "wait_risk_steps": 108,
+    "wait_when_forward_risky_rate": 0.14027000329272307,
+    "wait_when_wait_risky_rate": 0.0
+  },
+  "random_baseline": {
+    "episodes": 100,
+    "win_rate": 0.0,
+    "collision_rate": 0.69,
+    "truncation_rate": 0.31,
+    "mean_steps": 333.45,
+    "action_counts": {
+      "up": 6589,
+      "down": 6665,
+      "left": 6716,
+      "right": 6577,
+      "wait": 6798
+    },
+    "action_rates": {
+      "up": 0.19760083970610287,
+      "down": 0.19988004198530515,
+      "left": 0.20140950667266458,
+      "right": 0.1972409656620183,
+      "wait": 0.20386864597390914
+    },
+    "wait_rate": 0.20386864597390914,
+    "forward_risk_steps": 6267,
+    "wait_risk_steps": 27,
+    "wait_when_forward_risky_rate": 0.20105313547151749,
+    "wait_when_wait_risky_rate": 0.14814814814814814
+  },
+  "delta_win_rate": 0.41,
+  "delta_survival": -246.44
+}

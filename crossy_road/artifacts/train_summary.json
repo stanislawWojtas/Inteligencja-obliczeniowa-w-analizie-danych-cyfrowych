@@ -1,0 +1,36 @@
+{
+  "timesteps": 100000,
+  "episodes": 959,
+  "mean_reward_last_20": -0.5924999999999997,
+  "env_config": {
+    "max_steps": 500
+  },
+  "training_actions": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "eval_config": {
+    "eval_freq": 10000,
+    "eval_episodes": 20,
+    "best_mean_reward": 13.741,
+    "best_model_path": "artifacts/best_model.zip"
+  },
+  "dqn_config": {
+    "learning_rate": 0.0003,
+    "buffer_size": 100000,
+    "learning_starts": 5000,
+    "batch_size": 64,
+    "gamma": 0.99,
+    "train_freq": 4,
+    "target_update_interval": 500,
+    "exploration_fraction": 0.4,
+    "exploration_final_eps": 0.02
+  },
+  "model_path": "artifacts/dqn_crossy_road.zip",
+  "monitor_csv": "artifacts/monitor.csv",
+  "evaluations_npz": "artifacts/evaluations.npz",
+  "learning_curve_path": "artifacts/learning_curve.png"
+}

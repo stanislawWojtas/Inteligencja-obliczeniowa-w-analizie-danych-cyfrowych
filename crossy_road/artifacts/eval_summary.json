@@ -1,58 +1,58 @@
 {
   "model": {
-    "episodes": 100,
-    "win_rate": 0.41,
-    "collision_rate": 0.59,
+    "episodes": 10,
+    "win_rate": 0.3,
+    "collision_rate": 0.7,
     "truncation_rate": 0.0,
-    "mean_reward": 0.31560000000000105,
-    "mean_steps": 87.01,
-    "survival_time": 87.01,
+    "mean_reward": -3.96,
+    "mean_steps": 58.7,
+    "survival_time": 58.7,
     "action_counts": {
-      "up": 5195,
-      "down": 751,
-      "left": 1363,
-      "right": 924,
-      "wait": 468
+      "up": 339,
+      "down": 7,
+      "left": 0,
+      "right": 79,
+      "wait": 162
     },
     "action_rates": {
-      "up": 0.59705780944719,
-      "down": 0.08631191817032526,
-      "left": 0.15664866107343983,
-      "right": 0.10619469026548672,
-      "wait": 0.053786921043558214
+      "up": 0.5775127768313458,
+      "down": 0.01192504258943782,
+      "left": 0.0,
+      "right": 0.13458262350936967,
+      "wait": 0.27597955706984667
     },
-    "wait_rate": 0.053786921043558214,
-    "forward_risk_steps": 3037,
-    "wait_risk_steps": 108,
-    "wait_when_forward_risky_rate": 0.14027000329272307,
+    "wait_rate": 0.27597955706984667,
+    "forward_risk_steps": 218,
+    "wait_risk_steps": 2,
+    "wait_when_forward_risky_rate": 0.6422018348623854,
     "wait_when_wait_risky_rate": 0.0
   },
   "random_baseline": {
-    "episodes": 100,
+    "episodes": 10,
     "win_rate": 0.0,
-    "collision_rate": 0.69,
-    "truncation_rate": 0.31,
-    "mean_steps": 333.45,
+    "collision_rate": 0.7,
+    "truncation_rate": 0.3,
+    "mean_steps": 345.4,
     "action_counts": {
-      "up": 6589,
-      "down": 6665,
-      "left": 6716,
-      "right": 6577,
-      "wait": 6798
+      "up": 727,
+      "down": 709,
+      "left": 670,
+      "right": 694,
+      "wait": 654
     },
     "action_rates": {
-      "up": 0.19760083970610287,
-      "down": 0.19988004198530515,
-      "left": 0.20140950667266458,
-      "right": 0.1972409656620183,
-      "wait": 0.20386864597390914
+      "up": 0.21048060220034742,
+      "down": 0.20526925303995366,
+      "left": 0.19397799652576722,
+      "right": 0.2009264620729589,
+      "wait": 0.18934568616097278
     },
-    "wait_rate": 0.20386864597390914,
-    "forward_risk_steps": 6267,
-    "wait_risk_steps": 27,
-    "wait_when_forward_risky_rate": 0.20105313547151749,
-    "wait_when_wait_risky_rate": 0.14814814814814814
+    "wait_rate": 0.18934568616097278,
+    "forward_risk_steps": 543,
+    "wait_risk_steps": 4,
+    "wait_when_forward_risky_rate": 0.20626151012891344,
+    "wait_when_wait_risky_rate": 0.25
   },
-  "delta_win_rate": 0.41,
-  "delta_survival": -246.44
+  "delta_win_rate": 0.3,
+  "delta_survival": -286.7
 }
